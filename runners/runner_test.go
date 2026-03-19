@@ -9,6 +9,8 @@ package runners
 import (
 	"context"
 	"errors"
+	"fmt"
+	"sort"
 	"testing"
 	"time"
 
@@ -1201,6 +1203,12 @@ func TestRunnerRun(t *testing.T) {
 						assert.NotEmpty(t, results[provider][i].TraceID, "TraceID should not be empty")
 						results[provider][i].TraceID = ""
 					}
+					// Runs within a provider execute in parallel so result order is
+					// non-deterministic. Sort by (Run, Task, Got) before comparing.
+					sortResults(results[provider])
+				}
+				for provider := range tt.want {
+					sortResults(tt.want[provider])
 				}
 
 				assert.Equal(t, tt.want, results)
@@ -2181,4 +2189,22 @@ func TestToLines(t *testing.T) {
 			assert.ElementsMatch(t, tt.want, got)
 		})
 	}
+}
+
+// sortResults sorts a RunResult slice by (Run, Task, Got) so that order-insensitive
+// comparisons work correctly even when runs execute in parallel.
+func sortResults(results []RunResult) {
+	sort.Slice(results, func(i, j int) bool {
+		a, b := results[i], results[j]
+		if a.Run != b.Run {
+			return a.Run < b.Run
+		}
+		if a.Task != b.Task {
+			return a.Task < b.Task
+		}
+		if fmt.Sprint(a.Got) != fmt.Sprint(b.Got) {
+			return fmt.Sprint(a.Got) < fmt.Sprint(b.Got)
+		}
+		return fmt.Sprint(a.Want) < fmt.Sprint(b.Want)
+	})
 }

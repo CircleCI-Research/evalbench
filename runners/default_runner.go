@@ -113,7 +113,8 @@ func (r *asyncResultSet) emitMessageEvent(message string) {
 }
 
 // NewDefaultRunner creates a new Runner that executes tasks on all configured providers
-// in parallel. The individual runs on a single provider are executed sequentially.
+// in parallel. The runs within a single provider also execute in parallel; tasks within
+// each run are executed sequentially.
 // It returns an error if any provider initialization fails.
 func NewDefaultRunner(ctx context.Context, cfg []config.ProviderConfig, judges []config.JudgeConfig, tools []config.ToolConfig, logger zerolog.Logger) (Runner, error) {
 	toolValidator, err := providertools.NewDockerToolExecutor(ctx)
